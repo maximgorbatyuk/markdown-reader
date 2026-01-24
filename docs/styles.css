@@ -29,6 +29,8 @@ body {
     color: var(--ink);
     min-height: 100vh;
     line-height: 1.7;
+    display: flex;
+    flex-direction: column;
 }
 
 /* Header */
@@ -123,7 +125,8 @@ header {
 main {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    min-height: calc(100vh - 65px);
+    flex: 1;
+    min-height: 0;
 }
 
 /* Editor Panel */
@@ -441,6 +444,81 @@ main {
     opacity: 1;
 }
 
+/* Footer */
+footer {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 3rem 2rem 1.5rem;
+    margin-top: auto;
+}
+
+.footer-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr;
+    gap: 3rem;
+}
+
+.footer-column {
+    display: flex;
+    flex-direction: column;
+}
+
+.footer-brand {
+    font-family: 'Literata', Georgia, serif;
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.01em;
+}
+
+.footer-author {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+
+.footer-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 1rem;
+}
+
+.footer-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.footer-links a {
+    color: var(--paper);
+    text-decoration: none;
+    font-size: 0.95rem;
+    transition: color var(--transition);
+}
+
+.footer-links a:hover {
+    color: var(--accent);
+}
+
+.footer-bottom {
+    max-width: 1200px;
+    margin: 2.5rem auto 0;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(248, 246, 241, 0.15);
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+}
+
 /* Responsive */
 @media (max-width: 900px) {
     main {
@@ -461,6 +539,16 @@ main {
     .actions {
         width: 100%;
         justify-content: flex-end;
+    }
+
+    .footer-content {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        text-align: center;
+    }
+
+    .footer-column {
+        align-items: center;
     }
 }
 

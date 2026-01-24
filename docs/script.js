@@ -85,51 +85,89 @@ async function exportPDF() {
     try {
         // Create a temporary container for PDF
         const container = document.createElement('div');
-        container.className = 'pdf-export';
         container.innerHTML = marked.parse(text);
 
-        // Apply print-friendly styles
+        // Apply print-friendly styles with full isolation
         container.style.cssText = `
+            all: initial;
             font-family: Georgia, serif;
+            font-size: 12pt;
             padding: 20px;
             max-width: 100%;
             line-height: 1.6;
             color: #1a1a1a;
+            background: #ffffff;
+            display: block;
         `;
 
-        // Style elements for PDF
-        container.querySelectorAll('h1').forEach(el => {
-            el.style.cssText = 'font-size: 24pt; margin-bottom: 16px; border-bottom: 2px solid #ddd; padding-bottom: 8px;';
-        });
-        container.querySelectorAll('h2').forEach(el => {
-            el.style.cssText = 'font-size: 18pt; margin-top: 24px; margin-bottom: 12px; color: #c45d35;';
-        });
-        container.querySelectorAll('h3').forEach(el => {
-            el.style.cssText = 'font-size: 14pt; margin-top: 20px; margin-bottom: 10px;';
-        });
+        // Helper function to apply styles (resets inheritance first)
+        const applyStyles = (selector, styles) => {
+            container.querySelectorAll(selector).forEach(el => {
+                el.style.cssText = 'all: unset; display: block; ' + styles;
+            });
+        };
+
+        // Style elements for PDF with explicit colors (no CSS variables or modern color functions)
+        applyStyles('h1', 'font-family: Georgia, serif; font-size: 24pt; font-weight: bold; margin-bottom: 16px; border-bottom: 2px solid #dddddd; padding-bottom: 8px; color: #1a1a1a;');
+        applyStyles('h2', 'font-family: Georgia, serif; font-size: 18pt; font-weight: bold; margin-top: 24px; margin-bottom: 12px; color: #c45d35;');
+        applyStyles('h3', 'font-family: Georgia, serif; font-size: 14pt; font-weight: bold; margin-top: 20px; margin-bottom: 10px; color: #1a1a1a;');
+        applyStyles('h4', 'font-family: Georgia, serif; font-size: 12pt; font-weight: bold; margin-top: 16px; margin-bottom: 8px; color: #1a1a1a;');
+        applyStyles('h5', 'font-family: Georgia, serif; font-size: 11pt; font-weight: bold; margin-top: 14px; margin-bottom: 6px; color: #1a1a1a;');
+        applyStyles('h6', 'font-family: Georgia, serif; font-size: 10pt; font-weight: bold; margin-top: 12px; margin-bottom: 4px; color: #1a1a1a;');
+        applyStyles('p', 'font-family: Georgia, serif; font-size: 12pt; margin-bottom: 12px; color: #1a1a1a;');
+        applyStyles('ul', 'font-family: Georgia, serif; font-size: 12pt; margin-bottom: 12px; padding-left: 24px; color: #1a1a1a;');
+        applyStyles('ol', 'font-family: Georgia, serif; font-size: 12pt; margin-bottom: 12px; padding-left: 24px; color: #1a1a1a;');
+        applyStyles('li', 'font-family: Georgia, serif; font-size: 12pt; margin-bottom: 4px; color: #1a1a1a; display: list-item;');
+        applyStyles('blockquote', 'font-family: Georgia, serif; border-left: 4px solid #c45d35; padding-left: 16px; margin: 16px 0; font-style: italic; color: #666666;');
+        applyStyles('hr', 'border: none; border-top: 1px solid #dddddd; margin: 24px 0;');
+
+        // Code elements
         container.querySelectorAll('code').forEach(el => {
-            el.style.cssText = 'font-family: monospace; background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-size: 10pt;';
+            el.style.cssText = 'all: unset; font-family: Courier, monospace; font-size: 10pt; background-color: #f0f0f0; padding: 2px 6px; border-radius: 3px; color: #1a1a1a;';
         });
         container.querySelectorAll('pre').forEach(el => {
-            el.style.cssText = 'background: #2d2a26; color: #e8e6e1; padding: 16px; border-radius: 6px; overflow-x: auto; font-size: 10pt;';
+            el.style.cssText = 'all: unset; display: block; font-family: Courier, monospace; background-color: #2d2a26; color: #e8e6e1; padding: 16px; border-radius: 6px; overflow-x: auto; font-size: 10pt; margin: 16px 0; white-space: pre-wrap; word-wrap: break-word;';
         });
         container.querySelectorAll('pre code').forEach(el => {
-            el.style.cssText = 'background: none; padding: 0; color: inherit;';
+            el.style.cssText = 'all: unset; font-family: Courier, monospace; background-color: transparent; padding: 0; color: #e8e6e1; font-size: 10pt;';
         });
-        container.querySelectorAll('blockquote').forEach(el => {
-            el.style.cssText = 'border-left: 4px solid #c45d35; padding-left: 16px; margin: 16px 0; font-style: italic; color: #666;';
-        });
+
+        // Links
         container.querySelectorAll('a').forEach(el => {
-            el.style.cssText = 'color: #c45d35;';
+            el.style.cssText = 'all: unset; color: #c45d35; text-decoration: underline; cursor: pointer;';
         });
+
+        // Tables
         container.querySelectorAll('table').forEach(el => {
-            el.style.cssText = 'border-collapse: collapse; width: 100%; margin: 16px 0;';
+            el.style.cssText = 'all: unset; display: table; border-collapse: collapse; width: 100%; margin: 16px 0; font-family: Georgia, serif; font-size: 11pt;';
         });
-        container.querySelectorAll('th, td').forEach(el => {
-            el.style.cssText = 'border: 1px solid #ddd; padding: 8px 12px; text-align: left;';
+        container.querySelectorAll('thead').forEach(el => {
+            el.style.cssText = 'all: unset; display: table-header-group;';
+        });
+        container.querySelectorAll('tbody').forEach(el => {
+            el.style.cssText = 'all: unset; display: table-row-group;';
+        });
+        container.querySelectorAll('tr').forEach(el => {
+            el.style.cssText = 'all: unset; display: table-row;';
         });
         container.querySelectorAll('th').forEach(el => {
-            el.style.cssText += 'background: #f5f5f5; font-weight: bold;';
+            el.style.cssText = 'all: unset; display: table-cell; border: 1px solid #dddddd; padding: 8px 12px; text-align: left; background-color: #f5f5f5; font-weight: bold; color: #1a1a1a;';
+        });
+        container.querySelectorAll('td').forEach(el => {
+            el.style.cssText = 'all: unset; display: table-cell; border: 1px solid #dddddd; padding: 8px 12px; text-align: left; color: #1a1a1a;';
+        });
+
+        // Images
+        container.querySelectorAll('img').forEach(el => {
+            el.style.cssText = 'all: unset; max-width: 100%; height: auto; display: block; margin: 12px 0;';
+        });
+
+        // Strong and em
+        container.querySelectorAll('strong').forEach(el => {
+            el.style.cssText = 'all: unset; font-weight: bold;';
+        });
+        container.querySelectorAll('em').forEach(el => {
+            el.style.cssText = 'all: unset; font-style: italic;';
         });
 
         document.body.appendChild(container);
@@ -141,7 +179,22 @@ async function exportPDF() {
             html2canvas: {
                 scale: 2,
                 useCORS: true,
-                letterRendering: true
+                letterRendering: true,
+                backgroundColor: '#ffffff',
+                // Sanitize colors in cloned document to avoid unsupported color functions
+                onclone: (clonedDoc) => {
+                    const allElements = clonedDoc.querySelectorAll('*');
+                    allElements.forEach(el => {
+                        const computed = window.getComputedStyle(el);
+                        // Force simple colors to avoid color() function issues
+                        if (computed.color) {
+                            el.style.color = el.style.color || '#1a1a1a';
+                        }
+                        if (computed.backgroundColor && computed.backgroundColor !== 'rgba(0, 0, 0, 0)') {
+                            el.style.backgroundColor = el.style.backgroundColor || '#ffffff';
+                        }
+                    });
+                }
             },
             jsPDF: {
                 unit: 'mm',
