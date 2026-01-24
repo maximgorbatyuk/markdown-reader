@@ -479,6 +479,13 @@ footer {
     color: var(--muted);
 }
 
+.footer-copyright {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 1rem;
+}
+
 .footer-title {
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.75rem;
@@ -506,17 +513,6 @@ footer {
 
 .footer-links a:hover {
     color: var(--accent);
-}
-
-.footer-bottom {
-    max-width: 1200px;
-    margin: 2.5rem auto 0;
-    padding-top: 1.5rem;
-    border-top: 1px solid rgba(248, 246, 241, 0.15);
-    text-align: center;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.75rem;
-    color: var(--muted);
 }
 
 /* Responsive */
