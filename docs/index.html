@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Reader</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Literata:opsz,wght@7..72,400;7..72,500;7..72,600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <div class="logo-icon">Md</div>
+            <span class="logo-text">Markdown Reader</span>
+        </div>
+        <div class="actions">
+            <input type="file" id="fileInput" class="file-input" accept=".md,.markdown,.txt">
+            <button class="btn btn-secondary" onclick="document.getElementById('fileInput').click()">
+                <span class="icon">📂</span>
+                <span>Open File</span>
+            </button>
+            <button class="btn btn-secondary" onclick="clearEditor()">
+                <span class="icon">🗑️</span>
+                <span>Clear</span>
+            </button>
+            <button class="btn btn-primary" id="exportBtn" onclick="exportPDF()" disabled>
+                <span class="icon">📄</span>
+                <span>Export PDF</span>
+            </button>
+        </div>
+    </header>
+
+    <main>
+        <section class="editor-panel">
+            <div class="panel-header">
+                <span class="panel-title">Editor</span>
+                <span class="char-count" id="charCount">0 characters</span>
+            </div>
+            <div class="editor-wrapper">
+                <textarea
+                    id="editor"
+                    placeholder="Type or paste your Markdown here...
+
+Or drag & drop a .md file anywhere on this panel.
+
+Try some Markdown:
+# Heading 1
+## Heading 2
+**bold** and *italic*
+- List item
+> Blockquote
+`inline code`"></textarea>
+                <div class="drop-zone" id="dropZone">
+                    <div class="drop-icon">📥</div>
+                    <div class="drop-text">Drop your Markdown file here</div>
+                    <div class="drop-hint">Supports .md, .markdown, and .txt files</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="preview-panel">
+            <div class="panel-header">
+                <span class="panel-title">Preview</span>
+            </div>
+            <div class="preview-wrapper">
+                <div id="preview">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">✨</div>
+                        <div class="empty-state-text">Your preview will appear here</div>
+                        <div class="empty-state-hint">Start typing Markdown in the editor</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
