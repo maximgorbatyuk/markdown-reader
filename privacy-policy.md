@@ -4,7 +4,7 @@
 
 ## Overview
 
-Yet Another Markdown Reader is a client-side web application that runs entirely in your browser. We are committed to protecting your privacy and being transparent about our practices.
+MarkdownReader.org is a client-side web application that runs entirely in your browser. We are committed to protecting your privacy and being transparent about our practices.
 
 ## Data Collection
 

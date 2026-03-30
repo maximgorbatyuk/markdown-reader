@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Simple HTTP server for the Markdown Reader application.
+Simple HTTP server for the MarkdownReader.org application.
 Run this script and open http://localhost:8000 in your browser.
 """
 
@@ -21,7 +21,7 @@ def main():
 
     with socketserver.TCPServer(("", PORT), handler) as httpd:
         url = f"http://localhost:{PORT}"
-        print(f"Serving Markdown Reader at {url}")
+        print(f"Serving MarkdownReader.org at {url}")
         print("Press Ctrl+C to stop the server")
 
         # Open browser automatically

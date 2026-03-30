@@ -1,4 +1,4 @@
-# Implementation Plan: Markdown Reader
+# Implementation Plan: MarkdownReader.org
 
 ## Feasibility Assessment
 

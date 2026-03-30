@@ -1,8 +1,8 @@
-# Yet Another Markdown Reader
+# MarkdownReader.org
 
 A client-side Markdown reader web application with live preview and PDF export.
 
-**Live Demo:** https://mgorbatyuk.dev/markdown-reader/
+**Live Demo:** https://markdownreader.org/
 
 **Author:** [Maxim Gorbatyuk](https://mgorbatyuk.dev)
 

@@ -4,25 +4,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yet Another Markdown Reader</title>
+    <title>MarkdownReader.org — Free Online Markdown Reader with Live Preview & PDF Export</title>
+
+    <!-- Canonical -->
+    <link rel="canonical" href="https://markdownreader.org/">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
 
     <!-- Primary Meta Tags -->
-    <meta name="title" content="Yet Another Markdown Reader">
+    <meta name="title" content="MarkdownReader.org — Free Online Markdown Reader with Live Preview & PDF Export">
     <meta name="description" content="A client-side Markdown reader web application with live preview and PDF export. Type, paste, or drag & drop your Markdown files.">
     <meta name="author" content="Maxim Gorbatyuk">
     <meta name="keywords" content="markdown, reader, editor, preview, pdf, export, client-side, web application">
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://mgorbatyuk.dev/markdown-reader/">
-    <meta property="og:title" content="Yet Another Markdown Reader">
+    <meta property="og:url" content="https://markdownreader.org/">
+    <meta property="og:title" content="MarkdownReader.org — Free Online Markdown Reader with Live Preview & PDF Export">
     <meta property="og:description" content="A client-side Markdown reader web application with live preview and PDF export. Type, paste, or drag & drop your Markdown files.">
-    <meta property="og:site_name" content="Yet Another Markdown Reader">
+    <meta property="og:site_name" content="MarkdownReader.org">
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://mgorbatyuk.dev/markdown-reader/">
-    <meta property="twitter:title" content="Yet Another Markdown Reader">
+    <meta property="twitter:url" content="https://markdownreader.org/">
+    <meta property="twitter:title" content="MarkdownReader.org — Free Online Markdown Reader with Live Preview & PDF Export">
     <meta property="twitter:description" content="A client-side Markdown reader web application with live preview and PDF export. Type, paste, or drag & drop your Markdown files.">
 
     <!-- Structured Data -->
@@ -30,9 +36,9 @@
     {
         "@context": "https://schema.org",
         "@type": "WebApplication",
-        "name": "Yet Another Markdown Reader",
+        "name": "MarkdownReader.org",
         "description": "A client-side Markdown reader web application with live preview and PDF export. Type, paste, or drag & drop your Markdown files.",
-        "url": "https://mgorbatyuk.dev/markdown-reader/",
+        "url": "https://markdownreader.org/",
         "applicationCategory": "UtilitiesApplication",
         "operatingSystem": "Any",
         "browserRequirements": "Requires JavaScript. Works in Chrome, Firefox, Safari, Edge.",
@@ -54,27 +60,34 @@
             "Client-side processing",
             "No data collection"
         ],
-        "screenshot": "https://mgorbatyuk.dev/markdown-reader/screenshot.png",
+        "screenshot": "https://markdownreader.org/screenshot.png",
         "license": "https://opensource.org/licenses/MIT"
     }
     </script>
+
+    <!-- Preconnect to CDNs -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
 
     <link
         href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Literata:opsz,wght@7..72,400;7..72,500;7..72,600&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 
 <body>
+    <a class="skip-link" href="#editor">Skip to editor</a>
     <header>
         <div class="logo">
             <div class="logo-icon">MD</div>
-            <span class="logo-text">Yet Another Markdown Reader</span>
+            <h1 class="logo-text">MarkdownReader.org</h1>
         </div>
         <div class="actions">
-            <input type="file" id="fileInput" class="file-input" accept=".md,.markdown,.txt">
+            <label for="fileInput" class="sr-only">Choose a Markdown file to open</label>
+            <input type="file" id="fileInput" class="file-input" accept=".md,.markdown,.txt" aria-label="Choose a Markdown file to open">
             <button class="btn btn-secondary" onclick="document.getElementById('fileInput').click()">
                 <span class="icon">📂</span>
                 <span>Open File</span>
@@ -97,7 +110,8 @@
                 <span class="char-count" id="charCount">0 characters</span>
             </div>
             <div class="editor-wrapper">
-                <textarea id="editor" placeholder="Type or paste your Markdown here...
+                <label for="editor" class="sr-only">Markdown editor</label>
+                <textarea id="editor" aria-label="Markdown editor" placeholder="Type or paste your Markdown here...
 
 Or drag & drop a .md file anywhere on this panel.
 
@@ -141,37 +155,37 @@ Try some Markdown:
     <footer>
         <div class="footer-content">
             <div class="footer-column">
-                <div class="footer-brand">Yet Another Markdown Reader</div>
-                <div class="footer-author"><a href="https://mgorbatyuk.dev" target="_blank">Maxim Gorbatyuk</a></div>
+                <div class="footer-brand">MarkdownReader.org</div>
+                <div class="footer-author"><a href="https://mgorbatyuk.dev" target="_blank" rel="noopener">Maxim Gorbatyuk</a></div>
                 <div class="footer-copyright">&copy; 2026. All rights reserved.</div>
             </div>
             <div class="footer-column">
                 <div class="footer-title">Our Projects</div>
                 <ul class="footer-links">
-                    <li><a href="https://techinterview.space" target="_blank">Techinterview.space</a></li>
-                    <li><a href="https://mgorbatyuk.dev/ev-charging-tracker?utm_source=markdown-reader&utm_medium=footer&utm_campaign=markdown-reader"
-                            target="_blank">EV Charge Tracker (iOS)</a></li>
-                    <li><a href="https://mgorbatyuk.dev/journey-wallet?utm_source=markdown-reader&utm_medium=footer&utm_campaign=markdown-reader"
-                            target="_blank">Journey Wallet (iOS)</a></li>
+                    <li><a href="https://techinterview.space" target="_blank" rel="noopener">Techinterview.space</a></li>
+                    <li><a href="https://mgorbatyuk.dev/ev-charging-tracker?utm_source=markdownreader&utm_medium=footer&utm_campaign=markdownreader"
+                            target="_blank" rel="noopener">EV Charge Tracker (iOS)</a></li>
+                    <li><a href="https://mgorbatyuk.dev/journey-wallet?utm_source=markdownreader&utm_medium=footer&utm_campaign=markdownreader"
+                            target="_blank" rel="noopener">Journey Wallet (iOS)</a></li>
                 </ul>
             </div>
             <div class="footer-column">
                 <div class="footer-title">About Project</div>
                 <ul class="footer-links">
-                    <li><a href="https://github.com/maximgorbatyuk/markdown-reader" target="_blank">GitHub
+                    <li><a href="https://github.com/maximgorbatyuk/markdown-reader" target="_blank" rel="noopener">GitHub
                             Repository</a></li>
                     <li><a href="https://github.com/maximgorbatyuk/markdown-reader/blob/main/privacy-policy.md"
-                            target="_blank">Privacy Policy</a></li>
-                    <li><a href="https://github.com/maximgorbatyuk/markdown-reader/issues" target="_blank">Found an
+                            target="_blank" rel="noopener">Privacy Policy</a></li>
+                    <li><a href="https://github.com/maximgorbatyuk/markdown-reader/issues" target="_blank" rel="noopener">Found an
                             Issue?</a></li>
                     <li><a href="https://github.com/maximgorbatyuk/markdown-reader/blob/main/CHANGELOG.md"
-                            target="_blank">Changelog</a></li>
+                            target="_blank" rel="noopener">Changelog</a></li>
                 </ul>
             </div>
         </div>
     </footer>
 
-    <script src="script.js"></script>
+    <script defer src="script.js"></script>
 </body>
 
 </html>

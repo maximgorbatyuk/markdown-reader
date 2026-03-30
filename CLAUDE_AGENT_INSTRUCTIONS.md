@@ -1,4 +1,4 @@
-# Claude Agent Instructions: Implement Markdown Reader
+# Claude Agent Instructions: Implement MarkdownReader.org
 
 ## Overview
 
@@ -194,7 +194,7 @@ Style these elements in the preview:
 ## Example Markdown for Testing
 
 ```markdown
-# Welcome to Markdown Reader
+# Welcome to MarkdownReader.org
 
 This is a **client-side** Markdown reader with *live preview*.
 
