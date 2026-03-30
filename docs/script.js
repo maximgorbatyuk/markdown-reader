@@ -6,6 +6,7 @@ const fileInput = document.getElementById('fileInput');
 const charCount = document.getElementById('charCount');
 const exportBtn = document.getElementById('exportBtn');
 const toast = document.getElementById('toast');
+document.getElementById('currentYear').textContent = new Date().getFullYear();
 
 // Configure marked
 marked.setOptions({
@@ -40,6 +41,7 @@ function clearEditor() {
     editor.value = '';
     renderMarkdown();
     showToast('Editor cleared');
+    gtag('event', 'clear_editor', { event_category: 'toolbar' });
 }
 
 // Show toast notification
@@ -67,6 +69,7 @@ function handleFile(file) {
         editor.value = e.target.result;
         renderMarkdown();
         showToast(`Loaded: ${file.name}`);
+        gtag('event', 'open_file', { event_category: 'toolbar', event_label: file.name });
     };
     reader.onerror = () => {
         showToast('Error reading file');
@@ -79,6 +82,7 @@ async function exportPDF() {
     const text = editor.value.trim();
     if (!text) return;
 
+    gtag('event', 'export_pdf', { event_category: 'toolbar' });
     exportBtn.disabled = true;
     exportBtn.innerHTML = '<span class="icon">⏳</span><span>Exporting...</span>';
 

@@ -528,12 +528,13 @@ footer {
     flex-direction: column;
 }
 
-.footer-brand {
-    font-family: 'Literata', Georgia, serif;
-    font-size: 1.25rem;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    letter-spacing: -0.01em;
+.footer-brand-ascii {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    line-height: 1.2;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+    white-space: pre;
 }
 
 .footer-author {
@@ -549,6 +550,10 @@ footer {
 }
 
 .footer-author a:hover {
+    color: var(--accent);
+}
+
+.footer-author .heart {
     color: var(--accent);
 }
 
