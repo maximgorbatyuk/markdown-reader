@@ -260,5 +260,37 @@ editorPanel.addEventListener('drop', (e) => {
     });
 });
 
+// Draggable splitter
+const splitter = document.getElementById('splitter');
+const mainEl = document.querySelector('main');
+
+let isDragging = false;
+
+splitter.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    isDragging = true;
+    splitter.classList.add('active');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+});
+
+window.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    const mainRect = mainEl.getBoundingClientRect();
+    const offset = e.clientX - mainRect.left;
+    const totalWidth = mainRect.width;
+    const percentage = (offset / totalWidth) * 100;
+    const clamped = Math.min(Math.max(percentage, 20), 80);
+    mainEl.style.gridTemplateColumns = `${clamped}% 6px 1fr`;
+});
+
+window.addEventListener('mouseup', () => {
+    if (!isDragging) return;
+    isDragging = false;
+    splitter.classList.remove('active');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+});
+
 // Initialize
 renderMarkdown();
