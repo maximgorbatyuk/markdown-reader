@@ -14,6 +14,17 @@ marked.setOptions({
     gfm: true
 });
 
+// Render markdown to a sanitized HTML string. DOMPurify strips <script>, inline
+// event handlers, and javascript:/data: URLs from untrusted markdown sources
+// (pasted content, repos opened via the toolbar) before it touches the DOM.
+function renderMarkdownSafe(text) {
+    const html = marked.parse(text);
+    if (typeof DOMPurify !== 'undefined') {
+        return DOMPurify.sanitize(html);
+    }
+    return html;
+}
+
 // Configure mermaid
 if (typeof mermaid !== 'undefined') {
     mermaid.initialize({
@@ -121,7 +132,7 @@ async function renderMarkdown() {
     const text = editor.value.trim();
 
     if (text) {
-        preview.innerHTML = marked.parse(text);
+        preview.innerHTML = renderMarkdownSafe(text);
         exportBtn.disabled = false;
     } else {
         preview.innerHTML = `
@@ -202,7 +213,7 @@ async function exportPDF() {
     try {
         // Create a temporary container for PDF
         const container = document.createElement('div');
-        container.innerHTML = marked.parse(text);
+        container.innerHTML = renderMarkdownSafe(text);
 
         // Apply print-friendly styles with full isolation
         container.style.cssText = `
