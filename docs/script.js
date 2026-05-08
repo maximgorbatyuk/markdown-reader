@@ -14,8 +14,110 @@ marked.setOptions({
     gfm: true
 });
 
+// Configure mermaid
+if (typeof mermaid !== 'undefined') {
+    mermaid.initialize({
+        startOnLoad: false,
+        theme: 'default',
+        suppressErrorRendering: true,
+        // Native SVG <text> instead of foreignObject so SVGs can be rasterized
+        // for PDF export (browsers don't render foreignObject when SVG is loaded
+        // via <img>).
+        flowchart: { htmlLabels: false }
+    });
+}
+
+const MERMAID_FENCE_RE = /```mermaid/;
+
+// Replace mermaid code blocks inside `container` with rendered SVG. Errors
+// surface as a red banner instead of the original source.
+async function renderMermaidBlocks(container, idPrefix, isStale) {
+    const codeBlocks = Array.from(container.querySelectorAll('pre > code.language-mermaid'));
+    if (!codeBlocks.length || typeof mermaid === 'undefined') return 0;
+
+    let rendered = 0;
+    for (let i = 0; i < codeBlocks.length; i++) {
+        if (isStale && isStale()) return rendered;
+        const code = codeBlocks[i];
+        const pre = code.parentElement;
+        if (!pre || !pre.parentElement) continue;
+        const source = code.textContent;
+        const wrapper = document.createElement('div');
+        try {
+            const { svg } = await mermaid.render(`${idPrefix}-${i}`, source);
+            wrapper.className = 'mermaid';
+            wrapper.innerHTML = svg;
+        } catch (err) {
+            wrapper.className = 'mermaid-error';
+            wrapper.textContent = `Mermaid error: ${(err && err.message) || 'Invalid diagram syntax'}`;
+        }
+        if (isStale && isStale()) return rendered;
+        pre.replaceWith(wrapper);
+        rendered++;
+    }
+    return rendered;
+}
+
+// Convert each rendered .mermaid SVG inside `container` to a PNG <img> with
+// explicit pixel dimensions. html2canvas struggles with intrinsic-sized SVGs,
+// especially across page boundaries, so for PDF we rasterize to a fixed size
+// that fits the A4 content area.
+async function rasterizeMermaidSvgs(container) {
+    const wrappers = Array.from(container.querySelectorAll('.mermaid'));
+    const PDF_MAX_WIDTH_PX = 600;
+    for (const wrapper of wrappers) {
+        const svg = wrapper.querySelector('svg');
+        if (!svg) continue;
+        try {
+            const vb = svg.viewBox && svg.viewBox.baseVal;
+            const wAttr = parseFloat(svg.getAttribute('width')) || 0;
+            const hAttr = parseFloat(svg.getAttribute('height')) || 0;
+            const intrinsicW = (vb && vb.width) || wAttr || 800;
+            const intrinsicH = (vb && vb.height) || hAttr || 600;
+
+            if (!svg.getAttribute('xmlns')) svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+            svg.setAttribute('width', String(intrinsicW));
+            svg.setAttribute('height', String(intrinsicH));
+
+            const svgString = new XMLSerializer().serializeToString(svg);
+            const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const loaded = await new Promise((resolve, reject) => {
+                const i = new Image();
+                i.onload = () => resolve(i);
+                i.onerror = reject;
+                i.src = url;
+            });
+
+            const scale = 2;
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.round(intrinsicW * scale);
+            canvas.height = Math.round(intrinsicH * scale);
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(loaded, 0, 0, canvas.width, canvas.height);
+            URL.revokeObjectURL(url);
+
+            const dataUrl = canvas.toDataURL('image/png');
+            const displayWidth = Math.min(intrinsicW, PDF_MAX_WIDTH_PX);
+            const displayHeight = intrinsicH * (displayWidth / intrinsicW);
+
+            const img = document.createElement('img');
+            img.src = dataUrl;
+            img.style.cssText = `display: block; margin: 12px auto; width: ${displayWidth}px; height: ${displayHeight}px;`;
+            wrapper.innerHTML = '';
+            wrapper.appendChild(img);
+        } catch (err) {
+            console.warn('Mermaid SVG rasterization failed; leaving SVG inline.', err);
+        }
+    }
+}
+
 // Render markdown
-function renderMarkdown() {
+let renderToken = 0;
+async function renderMarkdown() {
+    const myToken = ++renderToken;
     const text = editor.value.trim();
 
     if (text) {
@@ -34,6 +136,17 @@ function renderMarkdown() {
 
     // Update character count
     charCount.textContent = `${text.length.toLocaleString()} characters`;
+
+    if (text) {
+        const count = await renderMermaidBlocks(
+            preview,
+            `mermaid-preview-${myToken}`,
+            () => myToken !== renderToken
+        );
+        if (count > 0 && myToken === renderToken) {
+            gtag('event', 'render_mermaid', { event_category: 'preview', count });
+        }
+    }
 }
 
 // Clear editor
@@ -174,6 +287,17 @@ async function exportPDF() {
             el.style.cssText = 'all: unset; font-style: italic;';
         });
 
+        // Render mermaid then rasterize SVGs to PNG with fixed dimensions
+        // so html2pdf places them predictably on the A4 page.
+        await renderMermaidBlocks(container, `mermaid-pdf-${Date.now()}`);
+        await rasterizeMermaidSvgs(container);
+        container.querySelectorAll('.mermaid').forEach(el => {
+            el.style.cssText = 'all: unset; display: block; text-align: center; margin: 16px 0; page-break-inside: avoid;';
+        });
+        container.querySelectorAll('.mermaid-error').forEach(el => {
+            el.style.cssText = 'all: unset; display: block; font-family: Courier, monospace; color: #b00020; background-color: #fdecea; border: 1px solid #f5c2c0; padding: 12px; border-radius: 4px; margin: 16px 0; font-size: 10pt;';
+        });
+
         document.body.appendChild(container);
 
         const opt = {
@@ -221,8 +345,20 @@ async function exportPDF() {
     }
 }
 
-// Event listeners
-editor.addEventListener('input', renderMarkdown);
+// Event listeners — debounce only when mermaid blocks are present, since
+// SVG generation is heavier than plain markdown parsing.
+let inputDebounceTimer = null;
+editor.addEventListener('input', () => {
+    if (inputDebounceTimer) {
+        clearTimeout(inputDebounceTimer);
+        inputDebounceTimer = null;
+    }
+    if (MERMAID_FENCE_RE.test(editor.value)) {
+        inputDebounceTimer = setTimeout(renderMarkdown, 150);
+    } else {
+        renderMarkdown();
+    }
+});
 
 // File input
 fileInput.addEventListener('change', (e) => {

@@ -427,6 +427,33 @@ main {
     margin: 2.5rem 0;
 }
 
+#preview .mermaid {
+    display: flex;
+    justify-content: center;
+    margin: 1.5rem 0;
+    overflow-x: auto;
+    background: var(--paper-light);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem;
+}
+
+#preview .mermaid svg {
+    max-width: 100%;
+    height: auto;
+}
+
+#preview .mermaid-error {
+    color: #b00020;
+    background: #fdecea;
+    border: 1px solid #f5c2c0;
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    margin: 1.5rem 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+}
+
 #preview table {
     width: 100%;
     border-collapse: collapse;
