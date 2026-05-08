@@ -403,6 +403,7 @@ editorPanel.addEventListener('drop', (e) => {
 // Draggable splitter
 const splitter = document.getElementById('splitter');
 const mainEl = document.querySelector('main');
+const editorPanelEl = document.querySelector('.editor-panel');
 
 let isDragging = false;
 
@@ -416,12 +417,21 @@ splitter.addEventListener('mousedown', (e) => {
 
 window.addEventListener('mousemove', (e) => {
     if (!isDragging) return;
+    const editorRect = editorPanelEl.getBoundingClientRect();
     const mainRect = mainEl.getBoundingClientRect();
-    const offset = e.clientX - mainRect.left;
-    const totalWidth = mainRect.width;
-    const percentage = (offset / totalWidth) * 100;
+    const repoMode = document.body.classList.contains('repo-loaded');
+    const treeWidth = repoMode && treePanel && !treePanel.hidden
+        ? treePanel.getBoundingClientRect().width
+        : 0;
+    const splitArea = mainRect.width - treeWidth;
+    const offset = e.clientX - editorRect.left;
+    const percentage = (offset / splitArea) * 100;
     const clamped = Math.min(Math.max(percentage, 20), 80);
-    mainEl.style.gridTemplateColumns = `${clamped}% 6px 1fr`;
+    if (repoMode) {
+        mainEl.style.gridTemplateColumns = `${treeWidth}px ${clamped}% 6px 1fr`;
+    } else {
+        mainEl.style.gridTemplateColumns = `${clamped}% 6px 1fr`;
+    }
 });
 
 window.addEventListener('mouseup', () => {
@@ -431,6 +441,467 @@ window.addEventListener('mouseup', () => {
     document.body.style.cursor = '';
     document.body.style.userSelect = '';
 });
+
+// ----- Repository browsing -----
+
+const MARKDOWN_EXT_RE = /\.(md|markdown|mdown|mkd)$/i;
+
+const repoModal = document.getElementById('repoModal');
+const repoModalForm = document.getElementById('repoModalForm');
+const repoUrlInput = document.getElementById('repoUrlInput');
+const repoModalError = document.getElementById('repoModalError');
+const repoCancelBtn = document.getElementById('repoCancelBtn');
+const repoLoadBtn = document.getElementById('repoLoadBtn');
+const repoLoadLabel = repoLoadBtn ? repoLoadBtn.querySelector('.repo-load-label') : null;
+const treePanel = document.getElementById('treePanel');
+const treeContent = document.getElementById('treeContent');
+const treeRepoLabel = document.getElementById('treeRepoLabel');
+const closeRepoBtn = document.getElementById('closeRepoBtn');
+
+let currentRepo = null;
+let inFlightLoad = null;
+
+function openRepoModal() {
+    if (!repoModal) return;
+    setRepoModalError('');
+    setRepoModalLoading(false);
+    if (typeof repoModal.showModal === 'function') {
+        repoModal.showModal();
+    } else {
+        repoModal.setAttribute('open', '');
+    }
+    setTimeout(() => repoUrlInput && repoUrlInput.focus(), 0);
+    gtag('event', 'open_repo_modal', { event_category: 'toolbar' });
+}
+
+function closeRepoModal() {
+    if (!repoModal) return;
+    if (typeof repoModal.close === 'function') {
+        repoModal.close();
+    } else {
+        repoModal.removeAttribute('open');
+    }
+}
+
+function setRepoModalError(message) {
+    if (!repoModalError) return;
+    if (message) {
+        repoModalError.textContent = message;
+        repoModalError.hidden = false;
+    } else {
+        repoModalError.textContent = '';
+        repoModalError.hidden = true;
+    }
+}
+
+function setRepoModalLoading(loading) {
+    if (!repoModal || !repoLoadLabel) return;
+    repoModal.classList.toggle('loading', loading);
+    repoLoadLabel.textContent = loading ? 'Loading…' : 'Load';
+    if (repoLoadBtn) repoLoadBtn.disabled = loading;
+    if (repoUrlInput) repoUrlInput.disabled = loading;
+}
+
+// Parse a GitHub or GitLab URL into { host, owner, repo, branch?, projectPath? }.
+// projectPath is the URL-encoded full namespace path used by the GitLab API.
+function parseRepoUrl(rawUrl) {
+    let url;
+    try {
+        url = new URL(rawUrl.trim());
+    } catch (e) {
+        throw new Error('Enter a valid URL (https://github.com/owner/repo or https://gitlab.com/group/project).');
+    }
+
+    const host = url.hostname.toLowerCase();
+    let path = url.pathname.replace(/^\/+|\/+$/g, '');
+    if (path.endsWith('.git')) path = path.slice(0, -4);
+    if (!path) throw new Error('URL is missing the repository path.');
+
+    if (host === 'github.com' || host === 'www.github.com') {
+        const segments = path.split('/');
+        if (segments.length < 2) throw new Error('GitHub URL must include owner and repo (e.g. github.com/owner/repo).');
+        const [owner, repo, kind, ...rest] = segments;
+        let branch;
+        if ((kind === 'tree' || kind === 'blob') && rest.length > 0) {
+            branch = rest[0];
+        }
+        return { host: 'github', owner, repo, branch };
+    }
+
+    if (host === 'gitlab.com' || host === 'www.gitlab.com') {
+        // GitLab path may be: group/(subgroup/...)?project[/-/tree/branch/...]
+        let projectPath = path;
+        let branch;
+        const dashIdx = path.indexOf('/-/');
+        if (dashIdx !== -1) {
+            projectPath = path.slice(0, dashIdx);
+            const after = path.slice(dashIdx + 3).split('/');
+            if ((after[0] === 'tree' || after[0] === 'blob') && after.length > 1) {
+                branch = after[1];
+            }
+        }
+        const segments = projectPath.split('/');
+        if (segments.length < 2) throw new Error('GitLab URL must include namespace and project.');
+        const repo = segments[segments.length - 1];
+        const owner = segments.slice(0, -1).join('/');
+        return { host: 'gitlab', owner, repo, branch, projectPath };
+    }
+
+    throw new Error('Only github.com and gitlab.com URLs are supported.');
+}
+
+async function fetchJson(url, errorContext, signal) {
+    let res;
+    try {
+        res = await fetch(url, { headers: { Accept: 'application/json' }, signal });
+    } catch (e) {
+        if (e && e.name === 'AbortError') throw e;
+        throw new Error(`Network error while ${errorContext}.`);
+    }
+    if (res.status === 404) throw new Error('Repository not found or not public.');
+    if (res.status === 403) throw new Error('Rate limit reached. Try again later.');
+    if (!res.ok) throw new Error(`Request failed (${res.status}) while ${errorContext}.`);
+    return res.json();
+}
+
+// Encode each path segment but keep `/` as a separator so refs like
+// "release/2.0" stay valid in URL paths.
+function encodePathSegments(s) {
+    return s.split('/').map(encodeURIComponent).join('/');
+}
+
+async function fetchGitHubRepo(parsed, signal) {
+    let branch = parsed.branch;
+    if (!branch) {
+        const meta = await fetchJson(
+            `https://api.github.com/repos/${encodeURIComponent(parsed.owner)}/${encodeURIComponent(parsed.repo)}`,
+            'fetching repository metadata',
+            signal
+        );
+        branch = meta.default_branch;
+        if (!branch) throw new Error('Could not detect default branch.');
+    }
+    const tree = await fetchJson(
+        `https://api.github.com/repos/${encodeURIComponent(parsed.owner)}/${encodeURIComponent(parsed.repo)}/git/trees/${encodePathSegments(branch)}?recursive=1`,
+        'fetching repository tree',
+        signal
+    );
+    const files = (tree.tree || [])
+        .filter(entry => entry.type === 'blob' && MARKDOWN_EXT_RE.test(entry.path))
+        .map(entry => ({ path: entry.path }));
+    return {
+        host: 'github',
+        owner: parsed.owner,
+        repo: parsed.repo,
+        branch,
+        files,
+        truncated: !!tree.truncated,
+        rawBase: `https://raw.githubusercontent.com/${encodeURIComponent(parsed.owner)}/${encodeURIComponent(parsed.repo)}/${encodePathSegments(branch)}`
+    };
+}
+
+async function fetchGitLabRepo(parsed, signal) {
+    const encodedProject = encodeURIComponent(parsed.projectPath);
+    const meta = await fetchJson(
+        `https://gitlab.com/api/v4/projects/${encodedProject}`,
+        'fetching repository metadata',
+        signal
+    );
+    const branch = parsed.branch || meta.default_branch;
+    if (!branch) throw new Error('Could not detect default branch.');
+    const projectId = meta.id;
+
+    const files = [];
+    let page = 1;
+    let truncated = false;
+    const MAX_PAGES = 20;
+    while (true) {
+        const url = `https://gitlab.com/api/v4/projects/${projectId}/repository/tree?ref=${encodeURIComponent(branch)}&recursive=true&per_page=100&page=${page}`;
+        let res;
+        try {
+            res = await fetch(url, { headers: { Accept: 'application/json' }, signal });
+        } catch (e) {
+            if (e && e.name === 'AbortError') throw e;
+            throw new Error('Network error while fetching repository tree.');
+        }
+        if (!res.ok) throw new Error(`Request failed (${res.status}) while fetching repository tree.`);
+        const batch = await res.json();
+        for (const entry of batch) {
+            if (entry.type === 'blob' && MARKDOWN_EXT_RE.test(entry.path)) {
+                files.push({ path: entry.path });
+            }
+        }
+        const nextPage = res.headers.get('x-next-page');
+        if (!nextPage) break;
+        page = parseInt(nextPage, 10);
+        if (page > MAX_PAGES) { truncated = true; break; }
+    }
+
+    return {
+        host: 'gitlab',
+        owner: parsed.owner,
+        repo: parsed.repo,
+        branch,
+        projectId,
+        files,
+        truncated,
+        rawBase: `https://gitlab.com/api/v4/projects/${projectId}/repository/files`
+    };
+}
+
+function rawUrlForFile(repo, path) {
+    if (repo.host === 'github') {
+        const encoded = path.split('/').map(encodeURIComponent).join('/');
+        return `${repo.rawBase}/${encoded}`;
+    }
+    return `${repo.rawBase}/${encodeURIComponent(path)}/raw?ref=${encodeURIComponent(repo.branch)}`;
+}
+
+// Build a nested tree from flat path list. Folders sort first, then files,
+// each alphabetically. Each node: {name, type: 'folder'|'file', path?, children?}.
+function buildFileTree(files) {
+    const root = { name: '', type: 'folder', children: new Map() };
+    for (const file of files) {
+        const parts = file.path.split('/');
+        let node = root;
+        for (let i = 0; i < parts.length; i++) {
+            const name = parts[i];
+            const isFile = i === parts.length - 1;
+            if (!node.children.has(name)) {
+                node.children.set(name, isFile
+                    ? { name, type: 'file', path: file.path }
+                    : { name, type: 'folder', children: new Map() });
+            }
+            node = node.children.get(name);
+        }
+    }
+    function sort(node) {
+        if (node.type !== 'folder') return node;
+        const children = Array.from(node.children.values()).sort((a, b) => {
+            if (a.type !== b.type) return a.type === 'folder' ? -1 : 1;
+            return a.name.localeCompare(b.name);
+        });
+        return { ...node, children: children.map(sort) };
+    }
+    return sort(root);
+}
+
+function renderTree(repo) {
+    treeContent.innerHTML = '';
+    if (!repo.files.length) {
+        const empty = document.createElement('div');
+        empty.className = 'tree-empty';
+        empty.textContent = 'No Markdown files in this repository.';
+        treeContent.appendChild(empty);
+        return;
+    }
+    const root = buildFileTree(repo.files);
+    for (const child of root.children) {
+        treeContent.appendChild(renderTreeNode(child));
+    }
+}
+
+function renderTreeNode(node) {
+    const el = document.createElement('div');
+    el.className = `tree-node tree-${node.type}`;
+    const row = document.createElement('div');
+    row.className = 'tree-row';
+    row.setAttribute('role', 'treeitem');
+    row.tabIndex = 0;
+
+    if (node.type === 'folder') {
+        const caret = document.createElement('span');
+        caret.className = 'tree-caret';
+        caret.textContent = '▾';
+        const icon = document.createElement('span');
+        icon.className = 'tree-icon';
+        icon.textContent = '📁';
+        const label = document.createElement('span');
+        label.className = 'tree-label';
+        label.textContent = node.name;
+        row.append(caret, icon, label);
+        row.addEventListener('click', () => el.classList.toggle('collapsed'));
+        row.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                el.classList.toggle('collapsed');
+            }
+        });
+        el.appendChild(row);
+        const children = document.createElement('div');
+        children.className = 'tree-children';
+        for (const child of node.children) {
+            children.appendChild(renderTreeNode(child));
+        }
+        el.appendChild(children);
+    } else {
+        const spacer = document.createElement('span');
+        spacer.className = 'tree-caret';
+        spacer.textContent = '';
+        const icon = document.createElement('span');
+        icon.className = 'tree-icon';
+        icon.textContent = '📄';
+        const label = document.createElement('span');
+        label.className = 'tree-label';
+        label.textContent = node.name;
+        row.append(spacer, icon, label);
+        el.dataset.path = node.path;
+        const handler = () => loadRepoFile(node.path);
+        row.addEventListener('click', handler);
+        row.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handler();
+            }
+        });
+        el.appendChild(row);
+    }
+    return el;
+}
+
+async function loadRepoFile(path) {
+    if (!currentRepo) return;
+    const url = rawUrlForFile(currentRepo, path);
+    let text;
+    try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`Request failed (${res.status}).`);
+        text = await res.text();
+    } catch (e) {
+        showToast(`Could not load ${path}`);
+        return;
+    }
+    editor.value = text;
+    renderMarkdown();
+    setActiveFile(path);
+    gtag('event', 'open_repo_file', { event_category: 'repo', event_label: path });
+}
+
+function setActiveFile(path) {
+    treeContent.querySelectorAll('.tree-file.active').forEach(el => el.classList.remove('active'));
+    if (!path) return;
+    const escaped = (typeof CSS !== 'undefined' && CSS.escape) ? CSS.escape(path) : path.replace(/"/g, '\\"');
+    const target = treeContent.querySelector(`.tree-file[data-path="${escaped}"]`);
+    if (target) {
+        target.classList.add('active');
+        // Expand all parent folders.
+        let parent = target.parentElement;
+        while (parent && parent !== treeContent) {
+            if (parent.classList.contains('tree-folder')) {
+                parent.classList.remove('collapsed');
+            }
+            parent = parent.parentElement;
+        }
+        target.scrollIntoView({ block: 'nearest' });
+    }
+}
+
+function pickReadme(files) {
+    if (!files.length) return null;
+    const rootReadme = files.find(f => /^readme\.(md|markdown|mdown|mkd)$/i.test(f.path));
+    if (rootReadme) return rootReadme.path;
+    const anyReadme = files.find(f => /(^|\/)readme\.(md|markdown|mdown|mkd)$/i.test(f.path));
+    if (anyReadme) return anyReadme.path;
+    return files[0].path;
+}
+
+function showRepoPanel(repo) {
+    currentRepo = repo;
+    document.body.classList.add('repo-loaded');
+    treePanel.hidden = false;
+    treeRepoLabel.textContent = `${repo.owner}/${repo.repo}`;
+    treeRepoLabel.title = `${repo.owner}/${repo.repo} @ ${repo.branch}`;
+    mainEl.style.gridTemplateColumns = '';
+    renderTree(repo);
+}
+
+function closeRepo() {
+    cancelInFlightLoad();
+    currentRepo = null;
+    document.body.classList.remove('repo-loaded');
+    treePanel.hidden = true;
+    treeContent.innerHTML = '';
+    mainEl.style.gridTemplateColumns = '';
+    gtag('event', 'close_repo', { event_category: 'repo' });
+}
+
+async function handleRepoSubmit(rawUrl) {
+    if (inFlightLoad) return;
+    setRepoModalError('');
+    let parsed;
+    try {
+        parsed = parseRepoUrl(rawUrl);
+    } catch (e) {
+        setRepoModalError(e.message);
+        return;
+    }
+    const controller = new AbortController();
+    inFlightLoad = controller;
+    setRepoModalLoading(true);
+    try {
+        const repo = parsed.host === 'github'
+            ? await fetchGitHubRepo(parsed, controller.signal)
+            : await fetchGitLabRepo(parsed, controller.signal);
+        if (controller.signal.aborted) return;
+        showRepoPanel(repo);
+        closeRepoModal();
+        gtag('event', 'load_repo', {
+            event_category: 'repo',
+            event_label: repo.host,
+            value: repo.files.length
+        });
+        if (repo.truncated) {
+            showToast('Repository is large; showing partial file list.');
+        } else if (!repo.files.length) {
+            showToast('No Markdown files found in this repository.');
+        }
+        const readme = pickReadme(repo.files);
+        if (readme) {
+            await loadRepoFile(readme);
+        }
+    } catch (e) {
+        if (e && e.name === 'AbortError') return;
+        setRepoModalError(e.message || 'Failed to load repository.');
+    } finally {
+        if (inFlightLoad === controller) inFlightLoad = null;
+        setRepoModalLoading(false);
+    }
+}
+
+function cancelInFlightLoad() {
+    if (inFlightLoad) {
+        inFlightLoad.abort();
+        inFlightLoad = null;
+    }
+}
+
+if (repoModalForm) {
+    repoModalForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const value = repoUrlInput.value;
+        if (value) handleRepoSubmit(value);
+    });
+}
+if (repoCancelBtn) {
+    repoCancelBtn.addEventListener('click', () => {
+        cancelInFlightLoad();
+        closeRepoModal();
+    });
+}
+if (repoModal) {
+    // Close on backdrop click.
+    repoModal.addEventListener('click', (e) => {
+        if (e.target === repoModal) {
+            cancelInFlightLoad();
+            closeRepoModal();
+        }
+    });
+    // ESC key dispatches a 'cancel' event before closing the dialog.
+    repoModal.addEventListener('cancel', () => cancelInFlightLoad());
+}
+if (closeRepoBtn) {
+    closeRepoBtn.addEventListener('click', () => closeRepo());
+}
 
 // Initialize
 renderMarkdown();

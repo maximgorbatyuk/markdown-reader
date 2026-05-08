@@ -151,9 +151,13 @@ h1.logo-text {
 /* Main Layout */
 main {
     display: grid;
-    grid-template-columns: 1fr 6px 1fr;
+    grid-template-columns: minmax(0, 1fr) 6px minmax(0, 1fr);
     flex: 1;
     min-height: 0;
+}
+
+body.repo-loaded main {
+    grid-template-columns: 260px minmax(0, 1fr) 6px minmax(0, 1fr);
 }
 
 /* Splitter */
@@ -627,6 +631,16 @@ footer {
         grid-template-rows: 1fr 1fr;
     }
 
+    body.repo-loaded main {
+        grid-template-rows: auto 1fr 1fr;
+    }
+
+    .tree-panel {
+        max-height: 200px;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+    }
+
     .splitter {
         display: none;
     }
@@ -674,6 +688,228 @@ footer {
     .btn span:not(.icon) {
         display: none;
     }
+}
+
+/* Tree Panel */
+.tree-panel {
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border);
+    background: var(--paper);
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.tree-panel[hidden] {
+    display: none;
+}
+
+.tree-header {
+    gap: 0.5rem;
+}
+
+.tree-header .panel-title {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 0.8rem;
+    color: var(--ink);
+}
+
+.tree-close {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    transition: all var(--transition);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.tree-close:hover {
+    background: var(--ink);
+    color: var(--paper);
+}
+
+.tree-wrapper {
+    flex: 1;
+    overflow: auto;
+    padding: 0.5rem 0.25rem 1rem;
+}
+
+.tree-content {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: var(--ink);
+}
+
+.tree-empty,
+.tree-loading {
+    padding: 1rem;
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.tree-node {
+    display: block;
+}
+
+.tree-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    user-select: none;
+    color: var(--ink);
+    transition: background var(--transition), color var(--transition);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tree-row:hover {
+    background: var(--code-bg);
+}
+
+.tree-row:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+}
+
+.tree-row .tree-icon {
+    flex: 0 0 auto;
+    width: 1rem;
+    text-align: center;
+    color: var(--muted);
+}
+
+.tree-row .tree-caret {
+    flex: 0 0 auto;
+    width: 0.9rem;
+    color: var(--muted);
+    font-size: 0.7rem;
+    transition: transform var(--transition);
+    display: inline-block;
+}
+
+.tree-folder.collapsed > .tree-row .tree-caret {
+    transform: rotate(-90deg);
+}
+
+.tree-folder.collapsed > .tree-children {
+    display: none;
+}
+
+.tree-row .tree-label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tree-children {
+    margin-left: 0.85rem;
+    border-left: 1px dashed var(--border);
+    padding-left: 0.35rem;
+}
+
+.tree-file.active > .tree-row {
+    background: var(--accent);
+    color: white;
+}
+
+.tree-file.active > .tree-row .tree-icon {
+    color: white;
+}
+
+/* Modal */
+.repo-modal {
+    border: none;
+    padding: 0;
+    border-radius: 12px;
+    background: var(--paper-light);
+    color: var(--ink);
+    box-shadow: 0 24px 60px rgba(26, 26, 26, 0.25);
+    max-width: 480px;
+    width: calc(100% - 2rem);
+    margin: auto;
+    inset: 0;
+}
+
+.repo-modal::backdrop {
+    background: rgba(26, 26, 26, 0.4);
+    backdrop-filter: blur(2px);
+}
+
+.repo-modal-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    padding: 1.5rem;
+}
+
+.repo-modal-title {
+    font-family: 'Literata', Georgia, serif;
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0;
+}
+
+.repo-modal-hint {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.repo-modal-input {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    padding: 0.7rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--paper);
+    color: var(--ink);
+    outline: none;
+    transition: border-color var(--transition), box-shadow var(--transition);
+    width: 100%;
+}
+
+.repo-modal-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(196, 93, 53, 0.15);
+}
+
+.repo-modal-error {
+    color: #b00020;
+    background: #fdecea;
+    border: 1px solid #f5c2c0;
+    padding: 0.6rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.repo-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    margin-top: 0.25rem;
+}
+
+.repo-modal.loading .repo-modal-input,
+.repo-modal.loading button {
+    pointer-events: none;
+    opacity: 0.65;
 }
 
 /* PDF Export Styles (hidden, used for rendering) */

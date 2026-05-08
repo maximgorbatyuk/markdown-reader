@@ -102,6 +102,10 @@
                 <span class="icon">📂</span>
                 <span>Open File</span>
             </button>
+            <button class="btn btn-secondary" onclick="openRepoModal()">
+                <span class="icon">🔗</span>
+                <span>Open Repository</span>
+            </button>
             <button class="btn btn-secondary" onclick="clearEditor()">
                 <span class="icon">🗑️</span>
                 <span>Clear</span>
@@ -114,6 +118,16 @@
     </header>
 
     <main>
+        <aside class="tree-panel" id="treePanel" hidden>
+            <div class="panel-header tree-header">
+                <span class="panel-title" id="treeRepoLabel">Repository</span>
+                <button class="tree-close" id="closeRepoBtn" type="button" aria-label="Close repository" title="Close repository">✕</button>
+            </div>
+            <div class="tree-wrapper">
+                <div class="tree-content" id="treeContent" role="tree" aria-label="Repository file tree"></div>
+            </div>
+        </aside>
+
         <section class="editor-panel">
             <div class="panel-header">
                 <span class="panel-title">Editor</span>
@@ -161,6 +175,29 @@ Try some Markdown:
     </main>
 
     <div class="toast" id="toast"></div>
+
+    <dialog class="repo-modal" id="repoModal" aria-labelledby="repoModalTitle">
+        <form method="dialog" class="repo-modal-form" id="repoModalForm">
+            <h2 class="repo-modal-title" id="repoModalTitle">Open a public repository</h2>
+            <p class="repo-modal-hint">Paste a GitHub or GitLab URL. We'll list every Markdown file so you can browse it.</p>
+            <label class="sr-only" for="repoUrlInput">Repository URL</label>
+            <input
+                type="url"
+                id="repoUrlInput"
+                class="repo-modal-input"
+                placeholder="https://github.com/owner/repo"
+                autocomplete="off"
+                spellcheck="false"
+                required>
+            <div class="repo-modal-error" id="repoModalError" role="alert" hidden></div>
+            <div class="repo-modal-actions">
+                <button type="button" class="btn btn-secondary" id="repoCancelBtn">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="repoLoadBtn">
+                    <span class="repo-load-label">Load</span>
+                </button>
+            </div>
+        </form>
+    </dialog>
 
     <footer>
         <div class="footer-content">
