@@ -1,0 +1,4 @@
+{
+  "error": "token_endpoint_not_implemented",
+  "error_description": "MarkdownReader.org is a static site and does not mint OAuth access tokens."
+}

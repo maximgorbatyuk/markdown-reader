@@ -1,0 +1,9 @@
+{
+  "name": "MarkdownReader.org",
+  "description": "Client-side markdown reader and preview service.",
+  "homepage": "https://markdownreader.org/",
+  "serviceDocs": "/api.html",
+  "apiCatalog": "/.well-known/api-catalog",
+  "authorizationServer": "/.well-known/oauth-authorization-server",
+  "protectedResourceMetadata": "/.well-known/oauth-protected-resource"
+}

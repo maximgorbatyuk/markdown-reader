@@ -1,0 +1,17 @@
+{
+  "serverInfo": {
+    "name": "markdownreader.org",
+    "version": "1.0.0"
+  },
+  "transports": [
+    {
+      "type": "streamable-http",
+      "endpoint": "https://markdownreader.org/mcp"
+    }
+  ],
+  "capabilities": {
+    "tools": {},
+    "resources": {},
+    "prompts": {}
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "$schema": "https://schemas.agentskills.io/discovery/0.2.0/schema.json",
+  "skills": [
+    {
+      "name": "implement-agent-skills-discovery-index",
+      "type": "skill-md",
+      "description": "Publishes an Agent Skills discovery document at /.well-known/agent-skills/index.json per RFC v0.2.0.",
+      "url": "https://isitagentready.com/.well-known/agent-skills/agent-skills/SKILL.md",
+      "digest": "sha256:2cdda60ea052eb8af4ae8a4d96dc0d173151d5386ee724a4e98f93ed21adbae5"
+    }
+  ]
+}

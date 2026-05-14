@@ -1,0 +1,52 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "MarkdownReader.org Service Description",
+    "version": "1.0.0",
+    "description": "MarkdownReader.org is a client-side markdown reader with no server-side business API. OAuth discovery metadata is published for agent compatibility."
+  },
+  "servers": [
+    {
+      "url": "https://markdownreader.org"
+    }
+  ],
+  "paths": {
+    "/health.json": {
+      "get": {
+        "summary": "Service health check",
+        "operationId": "getHealth",
+        "responses": {
+          "200": {
+            "description": "Static health response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "pass"
+                      ]
+                    },
+                    "serviceId": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "serviceId",
+                    "version"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

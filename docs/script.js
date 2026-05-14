@@ -914,5 +914,176 @@ if (closeRepoBtn) {
     closeRepoBtn.addEventListener('click', () => closeRepo());
 }
 
+function normalizeToolInput(input) {
+    if (!input || typeof input !== 'object') return {};
+    return input;
+}
+
+function buildWebMcpTools() {
+    return [
+        {
+            name: 'markdown.get_content',
+            description: 'Get the current Markdown text from the editor.',
+            inputSchema: {
+                type: 'object',
+                properties: {},
+                additionalProperties: false
+            },
+            annotations: { readOnlyHint: true },
+            execute: async () => ({
+                content: editor.value,
+                characterCount: editor.value.length
+            })
+        },
+        {
+            name: 'markdown.set_content',
+            description: 'Set the Markdown editor text and refresh the preview.',
+            inputSchema: {
+                type: 'object',
+                properties: {
+                    content: { type: 'string', description: 'Markdown content to write into the editor.' },
+                    append: { type: 'boolean', description: 'Append content instead of replacing existing content.' }
+                },
+                required: ['content'],
+                additionalProperties: false
+            },
+            execute: async (input) => {
+                const safeInput = normalizeToolInput(input);
+                const content = typeof safeInput.content === 'string' ? safeInput.content : '';
+                const append = Boolean(safeInput.append);
+                editor.value = append ? `${editor.value}${content}` : content;
+                await renderMarkdown();
+                return {
+                    ok: true,
+                    characterCount: editor.value.length
+                };
+            }
+        },
+        {
+            name: 'markdown.clear_editor',
+            description: 'Clear the markdown editor and reset preview.',
+            inputSchema: {
+                type: 'object',
+                properties: {},
+                additionalProperties: false
+            },
+            execute: async () => {
+                clearEditor();
+                return { ok: true };
+            }
+        },
+        {
+            name: 'markdown.get_preview_html',
+            description: 'Get rendered preview HTML generated from current markdown.',
+            inputSchema: {
+                type: 'object',
+                properties: {},
+                additionalProperties: false
+            },
+            annotations: { readOnlyHint: true, untrustedContentHint: true },
+            execute: async () => ({
+                html: preview.innerHTML,
+                hasContent: Boolean(editor.value.trim())
+            })
+        },
+        {
+            name: 'markdown.export_pdf',
+            description: 'Export the current markdown content to a PDF file.',
+            inputSchema: {
+                type: 'object',
+                properties: {},
+                additionalProperties: false
+            },
+            execute: async () => {
+                await exportPDF();
+                return { ok: true };
+            }
+        },
+        {
+            name: 'markdown.open_repository',
+            description: 'Load a public GitHub or GitLab repository and index markdown files.',
+            inputSchema: {
+                type: 'object',
+                properties: {
+                    url: { type: 'string', description: 'Public GitHub or GitLab repository URL.' }
+                },
+                required: ['url'],
+                additionalProperties: false
+            },
+            execute: async (input) => {
+                const safeInput = normalizeToolInput(input);
+                const url = typeof safeInput.url === 'string' ? safeInput.url.trim() : '';
+                if (!url) {
+                    throw new Error('Repository URL is required.');
+                }
+                await handleRepoSubmit(url);
+                return {
+                    ok: true,
+                    repository: currentRepo
+                        ? {
+                            host: currentRepo.host,
+                            owner: currentRepo.owner,
+                            repo: currentRepo.repo,
+                            branch: currentRepo.branch,
+                            fileCount: currentRepo.files.length
+                        }
+                        : null
+                };
+            }
+        },
+        {
+            name: 'markdown.open_repository_file',
+            description: 'Open a markdown file by path from the currently loaded repository.',
+            inputSchema: {
+                type: 'object',
+                properties: {
+                    path: { type: 'string', description: 'Repository-relative path to markdown file.' }
+                },
+                required: ['path'],
+                additionalProperties: false
+            },
+            execute: async (input) => {
+                const safeInput = normalizeToolInput(input);
+                const path = typeof safeInput.path === 'string' ? safeInput.path.trim() : '';
+                if (!currentRepo) {
+                    throw new Error('No repository is loaded.');
+                }
+                if (!path) {
+                    throw new Error('File path is required.');
+                }
+                await loadRepoFile(path);
+                return {
+                    ok: true,
+                    openedPath: path
+                };
+            }
+        }
+    ];
+}
+
+function initializeWebMcp() {
+    const modelContext = navigator.modelContext;
+    if (!modelContext) return;
+
+    const tools = buildWebMcpTools();
+
+    try {
+        if (typeof modelContext.provideContext === 'function') {
+            modelContext.provideContext({ tools });
+            return;
+        }
+
+        if (typeof modelContext.registerTool === 'function') {
+            const abortController = new AbortController();
+            tools.forEach((tool) => {
+                modelContext.registerTool(tool, { signal: abortController.signal });
+            });
+        }
+    } catch (err) {
+        console.warn('WebMCP initialization failed:', err);
+    }
+}
+
 // Initialize
+initializeWebMcp();
 renderMarkdown();

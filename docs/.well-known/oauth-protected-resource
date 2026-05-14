@@ -1,0 +1,9 @@
+{
+  "resource": "https://markdownreader.org",
+  "authorization_servers": [
+    "https://markdownreader.org"
+  ],
+  "scopes_supported": [
+    "api.read"
+  ]
+}

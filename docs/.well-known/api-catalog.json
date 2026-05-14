@@ -1,0 +1,37 @@
+{
+  "linkset": [
+    {
+      "anchor": "https://markdownreader.org/",
+      "service-desc": [
+        {
+          "href": "https://markdownreader.org/.well-known/service-desc.json",
+          "type": "application/openapi+json"
+        }
+      ],
+      "service-doc": [
+        {
+          "href": "https://markdownreader.org/api.html",
+          "type": "text/html"
+        }
+      ],
+      "status": [
+        {
+          "href": "https://markdownreader.org/health.json",
+          "type": "application/json"
+        }
+      ],
+      "mcp-server-card": [
+        {
+          "href": "https://markdownreader.org/.well-known/mcp/server-card.json",
+          "type": "application/json"
+        }
+      ],
+      "oauth-protected-resource": [
+        {
+          "href": "https://markdownreader.org/.well-known/oauth-protected-resource",
+          "type": "application/json"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+/ 
+  Link: </.well-known/api-catalog>; rel="api-catalog"
+  Link: </.well-known/service-desc.json>; rel="service-desc"
+  Link: </api.html>; rel="service-doc"
+  Link: </.well-known/mcp/server-card.json>; rel="mcp-server-card"
+  Link: </.well-known/oauth-authorization-server>; rel="authorization_server"
+  Link: </.well-known/oauth-protected-resource>; rel="oauth-protected-resource"
+  Link: </.well-known/agent.json>; rel="describedby"
+
+/index.html
+  Link: </.well-known/api-catalog>; rel="api-catalog"
+  Link: </.well-known/service-desc.json>; rel="service-desc"
+  Link: </api.html>; rel="service-doc"
+  Link: </.well-known/mcp/server-card.json>; rel="mcp-server-card"
+  Link: </.well-known/oauth-authorization-server>; rel="authorization_server"
+  Link: </.well-known/oauth-protected-resource>; rel="oauth-protected-resource"
+  Link: </.well-known/agent.json>; rel="describedby"
+
+/.well-known/api-catalog
+  Content-Type: application/linkset+json; profile="https://www.rfc-editor.org/info/rfc9727"
+
+/.well-known/oauth-authorization-server
+  Content-Type: application/json
+
+/.well-known/oauth-protected-resource
+  Content-Type: application/json
+
+/.well-known/mcp/server-card.json
+  Content-Type: application/json
+  Access-Control-Allow-Origin: *
+  Access-Control-Allow-Methods: GET
+  Access-Control-Allow-Headers: Content-Type
+
+/oauth/authorize
+  Content-Type: application/json
+
+/oauth/token
+  Content-Type: application/json
