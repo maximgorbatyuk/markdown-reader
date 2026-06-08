@@ -410,12 +410,16 @@ body.repo-loaded main {
 }
 
 #preview pre {
+    position: relative;
     background: var(--code-bg);
     color: var(--code-text);
     padding: 1.25rem;
     border-radius: 8px;
-    overflow-x: auto;
     margin: 1.5rem 0;
+    /* Wrap long lines instead of scrolling horizontally. */
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    tab-size: 4;
 }
 
 #preview pre code {
@@ -423,6 +427,54 @@ body.repo-loaded main {
     padding: 0;
     font-size: 0.85rem;
     line-height: 1.6;
+    /* Inherit wrapping from the parent <pre>. */
+    white-space: inherit;
+    overflow-wrap: inherit;
+}
+
+.copy-code-btn {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.6rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.6rem;
+    font-family: inherit;
+    font-size: 0.75rem;
+    line-height: 1;
+    color: var(--code-text);
+    background: var(--paper-light);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity var(--transition), background var(--transition), color var(--transition);
+}
+
+#preview pre:hover .copy-code-btn,
+.copy-code-btn:focus-visible {
+    opacity: 1;
+}
+
+.copy-code-btn:hover {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+
+.copy-code-btn.copied {
+    opacity: 1;
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+
+/* Keep the button reachable on touch devices that lack hover. */
+@media (hover: none) {
+    .copy-code-btn {
+        opacity: 0.7;
+    }
 }
 
 #preview hr {

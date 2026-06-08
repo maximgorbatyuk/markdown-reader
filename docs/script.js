@@ -40,6 +40,70 @@ if (typeof mermaid !== 'undefined') {
 
 const MERMAID_FENCE_RE = /```mermaid/;
 
+// Copy `text` to the clipboard. Uses the async Clipboard API when available
+// (HTTPS / localhost) and falls back to a hidden textarea + execCommand for
+// insecure contexts where navigator.clipboard is undefined.
+async function copyToClipboard(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+        try {
+            await navigator.clipboard.writeText(text);
+            return;
+        } catch (err) {
+            // Permission denied or blocked context — fall through to execCommand.
+        }
+    }
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+        const ok = document.execCommand('copy');
+        if (!ok) throw new Error('execCommand copy failed');
+    } finally {
+        document.body.removeChild(textarea);
+    }
+}
+
+// Add a "Copy" button to each <pre> code block in `container`. Mermaid source
+// blocks are skipped because renderMermaidBlocks() replaces them with SVG.
+// Buttons are created here (after DOMPurify) so the injected listeners survive
+// sanitization. Only the <code> text is copied, never the button label.
+function addCopyButtons(container) {
+    const blocks = container.querySelectorAll('pre > code');
+    blocks.forEach((code) => {
+        if (code.classList.contains('language-mermaid')) return;
+        const pre = code.parentElement;
+        if (!pre || pre.querySelector(':scope > .copy-code-btn')) return;
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'copy-code-btn';
+        btn.textContent = 'Copy';
+        btn.setAttribute('aria-label', 'Copy code to clipboard');
+
+        let resetTimer = null;
+        btn.addEventListener('click', async () => {
+            try {
+                await copyToClipboard(code.textContent);
+                btn.textContent = 'Copied!';
+                btn.classList.add('copied');
+                gtag('event', 'copy_code', { event_category: 'preview' });
+            } catch (err) {
+                btn.textContent = 'Failed';
+            }
+            if (resetTimer) clearTimeout(resetTimer);
+            resetTimer = setTimeout(() => {
+                btn.textContent = 'Copy';
+                btn.classList.remove('copied');
+            }, 2000);
+        });
+
+        pre.appendChild(btn);
+    });
+}
+
 // Replace mermaid code blocks inside `container` with rendered SVG. Errors
 // surface as a red banner instead of the original source.
 async function renderMermaidBlocks(container, idPrefix, isStale) {
@@ -133,6 +197,7 @@ async function renderMarkdown() {
 
     if (text) {
         preview.innerHTML = renderMarkdownSafe(text);
+        addCopyButtons(preview);
         exportBtn.disabled = false;
     } else {
         preview.innerHTML = `
